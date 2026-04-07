@@ -3,130 +3,96 @@ import joblib
 import numpy as np
 import matplotlib.pyplot as plt
 from groq import Groq
-import os
 
-# ---------------------------
-# PAGE CONFIG
-# ---------------------------
-st.set_page_config(page_title="AI Revenue System", layout="wide")
-
-st.markdown("""
-<h1 style='text-align: center; color: #4CAF50;'>
-AI Revenue Risk Monitoring System
-</h1>
-""", unsafe_allow_html=True)
-
-# ---------------------------
-# LOAD MODEL
-# ---------------------------
+# -------------------------
+# Load model
+# -------------------------
 model = joblib.load("revenue_model.pkl")
 
-# ---------------------------
-# SESSION STATE
-# ---------------------------
+# -------------------------
+# App Title
+# -------------------------
+st.set_page_config(page_title="AI Revenue System", layout="wide")
+st.title("📊 AI Revenue Risk Monitoring System")
+
+# -------------------------
+# Inputs
+# -------------------------
+st.subheader("Enter Transaction Details")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    discount = st.slider("Discount", 0.0, 1.0, 0.1)
+    quantity = st.number_input("Quantity", min_value=1, value=5)  # ✅ FIXED (no max limit)
+
+with col2:
+    shipping_cost = st.number_input("Shipping Cost", min_value=0.0, value=50.0)
+    month = st.slider("Month", 1, 12, 6)
+
+# -------------------------
+# Season Mapping
+# -------------------------
+if month in [12, 1, 2]:
+    season = "Winter"
+elif month in [3, 4, 5]:
+    season = "Summer"
+elif month in [6, 7, 8]:
+    season = "Monsoon"
+else:
+    season = "Autumn"
+
+# -------------------------
+# Prediction
+# -------------------------
 if "prediction" not in st.session_state:
     st.session_state.prediction = None
 
-# ---------------------------
-# SIDEBAR INPUTS
-# ---------------------------
-st.sidebar.header("📥 Enter Transaction Details")
+if st.button("Predict Revenue"):
 
-discount = st.sidebar.slider("Discount (%)", 0.0, 1.0, 0.1)
-quantity = st.sidebar.number_input("Quantity", 1, 20, 5)
-shipping_cost = st.sidebar.number_input("Shipping Cost", 0.0, 1000.0, 50.0)
+    input_data = np.array([[discount, quantity, shipping_cost, month, 2024]])
+    prediction = model.predict(input_data)[0]
 
-season = st.sidebar.selectbox(
-    "Business Period",
-    ["Regular", "Festive Season", "Off Season"]
-)
+    st.session_state.prediction = prediction
 
-# Convert business period → month
-if season == "Festive Season":
-    month = 12
-elif season == "Off Season":
-    month = 6
-else:
-    month = 3
-
-year = 2015  # hidden (for model compatibility)
-
-# ---------------------------
-# PREDICTION BUTTON
-# ---------------------------
-if st.sidebar.button("🚀 Predict Revenue"):
-
-    input_data = np.array([[discount, quantity, shipping_cost, month, year]])
-    st.session_state.prediction = model.predict(input_data)[0]
-
-# ---------------------------
-# DISPLAY RESULTS
-# ---------------------------
-if st.session_state.prediction is not None:
-
-    prediction = st.session_state.prediction
     threshold = 1128
 
     if prediction < threshold:
-        risk = "🔴 High Risk"
-        insight = "High discount or low quantity is reducing expected revenue."
-        recommendation = "Reduce discount or increase quantity."
+        risk = "High Risk"
+        st.error(f"⚠️ High Risk | Predicted Revenue: {prediction:.2f}")
     else:
-        risk = "🟢 Normal"
-        insight = "Transaction is expected to generate stable revenue."
-        recommendation = "Maintain current pricing strategy."
+        risk = "Normal"
+        st.success(f"✅ Normal | Predicted Revenue: {prediction:.2f}")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("💰 Predicted Revenue", f"{prediction:.2f}")
-        st.metric("⚠️ Risk Level", risk)
-
-    with col2:
-        st.subheader("💡 Insight")
-        st.write(insight)
-
-        st.subheader("📌 Recommendation")
-        st.write(recommendation)
-
-    st.success("✅ Prediction ready — you can now ask AI for insights")
-
-    # ---------------------------
-    # GRAPH (DISCOUNT IMPACT)
-    # ---------------------------
-    st.subheader("📊 Revenue Sensitivity Analysis (Discount Impact)")
-
-    discount_range = np.linspace(0, 1, 10)
-    revenues = []
-
-    for d in discount_range:
-        temp_input = np.array([[d, quantity, shipping_cost, month, year]])
-        rev = model.predict(temp_input)[0]
-        revenues.append(rev)
+    # -------------------------
+    # Graph
+    # -------------------------
+    st.subheader("📈 Revenue vs Threshold")
 
     fig, ax = plt.subplots()
-    ax.plot(discount_range, revenues, marker='o')
-    ax.set_xlabel("Discount")
-    ax.set_ylabel("Predicted Revenue")
-    ax.set_title("Impact of Discount on Revenue")
-
+    ax.bar(["Predicted Revenue", "Threshold"], [prediction, threshold])
+    ax.set_ylabel("Revenue")
     st.pyplot(fig)
 
-    # ---------------------------
-    # EXTRA ANALYSIS
-    # ---------------------------
-    st.subheader("📈 Transaction Analysis")
+    # -------------------------
+    # Basic Insights
+    # -------------------------
+    st.subheader("📊 Transaction Analysis")
 
-    if discount > 0.3:
-        st.warning("High discount detected — may reduce profit.")
-    elif quantity > 10:
+    if quantity > 10:
         st.success("Bulk order — good revenue potential.")
+    elif discount > 0.5:
+        st.warning("High discount — may reduce profit margins.")
     else:
-        st.info("Normal transaction pattern")
+        st.info("Normal transaction pattern.")
 
-# ---------------------------
-# AI CHAT
-# ---------------------------
+# -------------------------
+# AI SECTION
+# -------------------------
+st.subheader("🤖 AI Business Assistant")
+
+user_query = st.text_input("Ask business questions:")
+
 if st.button("Get AI Insight"):
 
     if st.session_state.prediction is None:
@@ -138,18 +104,7 @@ if st.button("Get AI Insight"):
     else:
         prediction = st.session_state.prediction
 
-        from groq import Groq
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-        # Optional: derive season
-        if month in [12, 1, 2]:
-            season = "Winter"
-        elif month in [3, 4, 5]:
-            season = "Summer"
-        elif month in [6, 7, 8]:
-            season = "Monsoon"
-        else:
-            season = "Autumn"
 
         prompt = f"""
         You are a business analyst AI.
@@ -158,18 +113,22 @@ if st.button("Get AI Insight"):
         Discount: {discount}
         Quantity: {quantity}
         Shipping Cost: {shipping_cost}
-        Period: {season}
+        Season: {season}
         Predicted Revenue: {prediction}
 
         User Question: {user_query}
 
-        Provide clear business insights and actionable suggestions.
+        Provide clear, practical, and actionable business insights.
         """
 
-        response = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[{"role": "user", "content": prompt}]
-        )
+        try:
+            response = client.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[{"role": "user", "content": prompt}]
+            )
 
-        st.subheader("🤖 AI Insights")
-        st.write(response.choices[0].message.content)
+            st.subheader("💡 AI Insights")
+            st.write(response.choices[0].message.content)
+
+        except Exception as e:
+            st.error("AI service error. Check API key or usage limits.")
