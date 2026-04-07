@@ -1,34 +1,48 @@
 # AI-Powered Revenue Risk Monitoring System
 
-## Overview
-This project predicts sales revenue and identifies high-risk transactions using machine learning. It combines predictive modeling with business analytics to support data-driven decision-making.
+An AI-powered decision support system that predicts revenue and identifies high-risk transactions using machine learning and business intelligence.
 
-## Key Features
-- Revenue prediction using Linear Regression (R² ≈ 0.52)
-- Identification of high-risk transactions
-- Discount-profit analysis for business insights
-- Interactive Streamlit application
-- Dashboard visualization using Power BI
+⸻
 
-## Dataset
-- Global Superstore dataset (~1000 records)
-- Features: Discount, Quantity, Shipping Cost, Month, Year
+🚀 Key Features
+	•	📈 Revenue prediction using ML
+	•	⚠️ Risk scoring (Low / Medium / High)
+	•	📊 KPI dashboard (Revenue, Target, Gap)
+	•	📌 Business insights (rule-based intelligence)
+	•	🤖 Hybrid architecture (ML + decision engine)
+	•	🌐 Deployed via Streamlit
 
-## Model Details
-- Algorithm: Linear Regression
-- Evaluation Metrics:
-  - R² Score: ~0.52
-  - MAE: ~580
-- Compared multiple models before selecting final model
+⸻
 
-## Tech Stack
-- Python (Pandas, NumPy, Scikit-learn)
-- Streamlit
-- Power BI
-- Joblib
+🛠️ Tech Stack
 
-## Deployment
-Deployed using Streamlit Cloud: https://ai-powered-revenue-risk-monitering-system.streamlit.app/
+Python | Scikit-learn | Pandas | Streamlit | Matplotlib
+
+⸻
+
+📊 Model Performance
+	•	R² Score: ~0.52
+	•	MAE: ~580
+
+⸻
+
+💡 Business Value
+	•	Identifies low-performing transactions
+	•	Optimizes pricing & cost strategies
+	•	Supports data-driven decision-making
+
+⸻
+
+🔗 Live Demo
+
+[https://ai-powered-revenue-risk-monitering-system.streamlit.app/]
+
+⸻
+
+📄 Detailed Report
+
+[https://docs.google.com/document/d/10sOBF9NAlCtaVTjWgt-ToEFMs7qaDVDNCAoJ70ZLvGs/edit?usp=drivesdk]
+
 
 ## How to Run Locally
 pip install -r requirements.txt  
