@@ -37,7 +37,7 @@ with col2:
     shipping_cost = st.number_input("Shipping Cost", min_value=0.0, value=50.0)
     season = st.selectbox("Season", ["Off-Season", "Regular", "Peak"])
 
-# Convert season to numeric (model compatibility)
+# Convert season to model-compatible values
 season_map = {"Off-Season": 2, "Regular": 6, "Peak": 11}
 month = season_map[season]
 year = 2015
@@ -64,7 +64,6 @@ if st.session_state.prediction is not None:
     st.subheader("📊 Key Business Metrics")
 
     col1, col2, col3 = st.columns(3)
-
     col1.metric("Predicted Revenue", f"₹ {prediction:.2f}")
     col2.metric("Target Revenue", f"₹ {threshold}")
     col3.metric("Revenue Gap", f"₹ {threshold - prediction:.2f}")
@@ -95,15 +94,11 @@ if st.session_state.prediction is not None:
     st.subheader("📈 Revenue Performance")
 
     fig, ax = plt.subplots()
-
     labels = ["Predicted", "Target"]
     values = [prediction, threshold]
-
     ax.bar(labels, values)
-
     ax.set_ylabel("Revenue")
     ax.set_title("Revenue vs Target")
-
     st.pyplot(fig)
 
     st.info("💡 Insight: Compare predicted revenue against target to evaluate performance.")
@@ -144,7 +139,6 @@ st.markdown("---")
 st.subheader("🧠 Intelligent Decision Support System")
 
 user_query = st.text_input("Ask a business question:")
-
 use_llm = st.checkbox("Enable Advanced AI Insights (LLM)")
 
 if st.button("💡 Generate Insights"):
@@ -160,36 +154,56 @@ if st.button("💡 Generate Insights"):
         threshold = 1128
 
         # ------------------------------
-        # RULE-BASED INSIGHTS
+        # ADVANCED RULE-BASED INSIGHTS
         # ------------------------------
         st.subheader("📌 Rule-Based Insights")
 
         insights = []
 
-        if discount > 0.3:
-            insights.append("Reduce discount levels to protect profit margins.")
+        # Pricing
+        if discount > 0.4:
+            insights.append("Excessive discounting is eroding revenue. Revise pricing strategy.")
+        elif discount > 0.2:
+            insights.append("Moderate discounting detected. Ensure it drives sufficient volume.")
 
-        if quantity > 100:
-            insights.append("Focus on bulk buyers and B2B opportunities.")
+        # Volume
+        if quantity > 200:
+            insights.append("High-volume transaction → Opportunity for long-term B2B deals.")
+        elif quantity < 5:
+            insights.append("Low volume → Consider upselling or bundling strategies.")
 
-        if shipping_cost > 100:
-            insights.append("Optimize logistics to reduce shipping costs.")
+        # Cost
+        if shipping_cost > 150:
+            insights.append("Shipping cost is very high → Optimize logistics or vendors.")
+        elif shipping_cost > 80:
+            insights.append("Shipping cost moderately high → Monitor efficiency.")
 
-        if prediction < threshold:
-            insights.append("Revenue is below target. Improve pricing or increase sales volume.")
+        # Revenue
+        if prediction < threshold * 0.7:
+            insights.append("Revenue critically low → Immediate action required.")
+        elif prediction < threshold:
+            insights.append("Revenue below target → Improve pricing or sales volume.")
         else:
-            insights.append("Revenue is healthy. Consider scaling this strategy.")
+            insights.append("Revenue healthy → Consider scaling this strategy.")
 
+        # Combined logic
+        if discount > 0.3 and quantity < 10:
+            insights.append("High discount + low volume → Inefficient strategy causing losses.")
+
+        if shipping_cost > 100 and prediction < threshold:
+            insights.append("High cost + low revenue → Urgent cost optimization needed.")
+
+        # Query-based
         query = user_query.lower()
 
         if "increase revenue" in query:
-            insights.append("Optimize discounts, target high-volume customers, and improve pricing.")
+            insights.append("Increase revenue by optimizing pricing and targeting high-volume customers.")
 
         if "profit" in query:
-            insights.append("Reduce discounts and control operational costs.")
+            insights.append("Improve profit by reducing discounts and controlling costs.")
 
         if "cost" in query:
-            insights.append("Reduce shipping and operational expenses.")
+            insights.append("Reduce logistics and operational costs to improve margins.")
 
         for insight in insights:
             st.write("•", insight)
@@ -205,11 +219,10 @@ if st.button("💡 Generate Insights"):
                 prompt = f"""
 You are a business analyst.
 
-Transaction Details:
-- Discount: {discount}
-- Quantity: {quantity}
-- Shipping Cost: {shipping_cost}
-- Predicted Revenue: {prediction}
+Discount: {discount}
+Quantity: {quantity}
+Shipping Cost: {shipping_cost}
+Predicted Revenue: {prediction}
 
 User Question:
 {user_query}
