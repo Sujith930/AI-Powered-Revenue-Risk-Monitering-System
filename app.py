@@ -22,7 +22,7 @@ if "prediction" not in st.session_state:
     st.session_state.prediction = None
 
 # -------------------------------
-# INPUTS (BUSINESS FRIENDLY)
+# INPUTS
 # -------------------------------
 st.subheader("Enter Business Inputs")
 
@@ -30,23 +30,35 @@ col1, col2 = st.columns(2)
 
 with col1:
     discount = st.slider("Discount (%)", 0, 50, 10) / 100
-    quantity = st.number_input("Quantity Sold", min_value=1, max_value=1000, value=50)
+    quantity = st.number_input("Quantity Sold", min_value=1, value=50)
+
+    if quantity > 1000:
+        st.warning("⚠️ Large quantity — prediction may be less accurate")
 
 with col2:
     shipping_cost = st.number_input("Shipping Cost", min_value=0.0, value=50.0)
-    season = st.selectbox("Season", ["Off-Season", "Regular", "Peak"])
+    season = st.selectbox("Business Period", ["Off-Season", "Regular", "Peak"])
 
-# Convert season to numeric (model compatibility)
-season_map = {"Off-Season": 1, "Regular": 2, "Peak": 3}
-season_value = season_map[season]
+# -------------------------------
+# MODEL COMPATIBILITY
+# -------------------------------
+season_to_month = {
+    "Off-Season": 2,
+    "Regular": 6,
+    "Peak": 11
+}
+
+month = season_to_month[season]
+year = 2015  # fixed
 
 # -------------------------------
 # PREDICTION
 # -------------------------------
 if st.button("🔍 Predict Revenue"):
-    input_data = np.array([[discount, quantity, shipping_cost, season_value]])
-    prediction = model.predict(input_data)[0]
 
+    input_data = np.array([[discount, quantity, shipping_cost, month, year]])
+
+    prediction = model.predict(input_data)[0]
     st.session_state.prediction = prediction
 
     threshold = 1128
@@ -60,16 +72,17 @@ if st.button("🔍 Predict Revenue"):
         st.success("✅ Healthy Revenue Expected")
 
 # -------------------------------
-# BUSINESS GRAPH (USEFUL)
+# BUSINESS GRAPH
 # -------------------------------
 if st.session_state.prediction is not None:
-    st.subheader("📊 Revenue Sensitivity Analysis")
+
+    st.subheader("📊 Pricing Strategy Insight")
 
     discounts = np.linspace(0, 0.5, 20)
     revenues = []
 
     for d in discounts:
-        temp_input = np.array([[d, quantity, shipping_cost, season_value]])
+        temp_input = np.array([[d, quantity, shipping_cost, month, year]])
         revenues.append(model.predict(temp_input)[0])
 
     fig, ax = plt.subplots()
@@ -82,20 +95,21 @@ if st.session_state.prediction is not None:
 
     st.pyplot(fig)
 
-    st.info("💡 Insight: Increasing discounts may reduce revenue after a certain point. Find the optimal discount level.")
+    st.info("💡 Insight: Increasing discounts beyond a point reduces revenue. Identify optimal pricing.")
 
 # -------------------------------
-# TRANSACTION INSIGHT
+# TRANSACTION ANALYSIS
 # -------------------------------
 if st.session_state.prediction is not None:
-    st.subheader("📌 Transaction Analysis")
+
+    st.subheader("📌 Transaction Insights")
 
     if quantity > 100:
-        st.success("Bulk order detected → Strong revenue opportunity")
+        st.success("Bulk order → Strong revenue opportunity")
     elif discount > 0.3:
         st.warning("High discount → Profit margin risk")
     elif shipping_cost > 100:
-        st.warning("High shipping cost → Cost optimization needed")
+        st.warning("High shipping cost → Optimize logistics")
     else:
         st.info("Balanced transaction")
 
@@ -123,7 +137,7 @@ if st.button("💡 Get AI Insight"):
             prediction = st.session_state.prediction
 
             prompt = f"""
-You are a business analyst.
+You are a business analyst AI.
 
 Transaction Details:
 - Discount: {discount}
@@ -135,7 +149,7 @@ Transaction Details:
 User Question:
 {user_query}
 
-Give clear, simple, actionable business advice.
+Provide clear, simple, and actionable business insights.
 """
 
             response = client.chat.completions.create(
@@ -147,4 +161,4 @@ Give clear, simple, actionable business advice.
             st.write(response.choices[0].message.content)
 
         except Exception as e:
-            st.error(e)
+            st.error(f"AI Error: {e}")
