@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
+from openai import OpenAI
 
 # -------------------------------
 # PAGE CONFIG
