@@ -128,16 +128,13 @@ if st.button("💡 Get AI Insight"):
     elif not user_query:
         st.warning("⚠️ Please enter a question")
 
-   else:
+    else:
+        try:
+            client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-    try:
-        from openai import OpenAI
+            prediction = st.session_state.prediction
 
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-        prediction = st.session_state.prediction
-
-        prompt = f"""
+            prompt = f"""
 You are a business analyst AI.
 
 Transaction Details:
@@ -153,13 +150,13 @@ User Question:
 Give clear, simple, and actionable business insights.
 """
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}]
+            )
 
-        st.subheader("💡 AI Insights")
-        st.write(response.choices[0].message.content)
+            st.subheader("💡 AI Insights")
+            st.write(response.choices[0].message.content)
 
-    except Exception as e:
-        st.error(e)
+        except Exception as e:
+            st.error(f"AI Error: {e}")
