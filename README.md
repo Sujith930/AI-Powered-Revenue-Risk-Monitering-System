@@ -28,7 +28,7 @@ This project predicts sales revenue and identifies high-risk transactions using 
 - Joblib
 
 ## Deployment
-Deployed using Streamlit Cloud: [Add link here]
+Deployed using Streamlit Cloud: https://ai-powered-revenue-risk-monitering-system.streamlit.app/
 
 ## How to Run Locally
 pip install -r requirements.txt  
