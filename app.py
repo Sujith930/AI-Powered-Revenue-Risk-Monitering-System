@@ -129,6 +129,7 @@ if st.button("💡 Get AI Insight"):
         st.warning("⚠️ Please enter a question")
 
     else:
+        
         try:
     from openai import OpenAI
 
