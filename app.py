@@ -153,7 +153,7 @@ Provide clear, simple, and actionable business insights.
 """
 
             response = client.chat.completions.create(
-                model="llama3.1-8b-instant",
+                model="mixtral-8x7b-32768",
                 messages=[{"role": "user", "content": prompt}]
             )
 
