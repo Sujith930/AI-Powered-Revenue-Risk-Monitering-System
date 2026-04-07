@@ -130,13 +130,13 @@ if st.button("💡 Get AI Insight"):
 
     else:
         try:
-            from groq import Groq
+    from openai import OpenAI
 
-            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-            prediction = st.session_state.prediction
+    prediction = st.session_state.prediction
 
-            prompt = f"""
+    prompt = f"""
 You are a business analyst AI.
 
 Transaction Details:
@@ -149,16 +149,16 @@ Transaction Details:
 User Question:
 {user_query}
 
-Provide clear, simple, and actionable business insights.
+Give clear, simple, and actionable business insights.
 """
 
-            response = client.chat.completions.create(
-                model="mixtral-8x7b-32768",
-                messages=[{"role": "user", "content": prompt}]
-            )
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}]
+    )
 
-            st.subheader("💡 AI Insights")
-            st.write(response.choices[0].message.content)
+    st.subheader("💡 AI Insights")
+    st.write(response.choices[0].message.content)
 
-        except Exception as e:
-            st.error(f"AI Error: {e}")
+except Exception as e:
+    st.error(e)
