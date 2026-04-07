@@ -127,22 +127,29 @@ if st.session_state.prediction is not None:
 # ---------------------------
 # AI CHAT
 # ---------------------------
-st.markdown("---")
-st.subheader("🤖 AI Business Assistant")
-
-user_query = st.text_input("Ask business questions:")
-
 if st.button("Get AI Insight"):
 
     if st.session_state.prediction is None:
         st.warning("⚠️ Please run prediction first")
 
+    elif not user_query:
+        st.warning("⚠️ Please enter a business question")
+
     else:
         prediction = st.session_state.prediction
-        
-from groq import Groq
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        from groq import Groq
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+        # Optional: derive season
+        if month in [12, 1, 2]:
+            season = "Winter"
+        elif month in [3, 4, 5]:
+            season = "Summer"
+        elif month in [6, 7, 8]:
+            season = "Monsoon"
+        else:
+            season = "Autumn"
 
         prompt = f"""
         You are a business analyst AI.
@@ -156,11 +163,7 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
         User Question: {user_query}
 
-        Provide:
-        - Clear business insight
-        - Risk explanation
-        - Actionable recommendation
-        Keep it concise and practical.
+        Provide clear business insights and actionable suggestions.
         """
 
         response = client.chat.completions.create(
@@ -168,5 +171,5 @@ client = Groq(api_key=st.secrets["GROQ_API_KEY"])
             messages=[{"role": "user", "content": prompt}]
         )
 
-        st.subheader("🤖 AI Response")
+        st.subheader("🤖 AI Insights")
         st.write(response.choices[0].message.content)
