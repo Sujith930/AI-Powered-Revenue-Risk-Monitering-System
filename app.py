@@ -131,4 +131,4 @@ if st.button("Get AI Insight"):
             st.write(response.choices[0].message.content)
 
         except Exception as e:
-            st.error("AI service error. Check API key or usage limits.")
+    st.error(e)
