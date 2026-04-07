@@ -129,13 +129,13 @@ if st.button("💡 Get AI Insight"):
         st.warning("⚠️ Please enter a question")
 
     else:
-        
-        try:
-    from openai import OpenAI
 
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    try:
+        from openai import OpenAI
 
-    prediction = st.session_state.prediction
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+        prediction = st.session_state.prediction
 
     prompt = f"""
 You are a business analyst AI.
