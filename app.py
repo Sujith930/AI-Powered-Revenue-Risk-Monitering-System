@@ -2,133 +2,149 @@ import streamlit as st
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
-from groq import Groq
 
-# -------------------------
-# Load model
-# -------------------------
-model = joblib.load("revenue_model.pkl")
+# -------------------------------
+# PAGE CONFIG
+# -------------------------------
+st.set_page_config(page_title="AI Revenue Risk System", layout="wide")
 
-# -------------------------
-# App Title
-# -------------------------
-st.set_page_config(page_title="AI Revenue System", layout="wide")
 st.title("📊 AI Revenue Risk Monitoring System")
 
-# -------------------------
-# Inputs
-# -------------------------
-st.subheader("Enter Transaction Details")
+# -------------------------------
+# LOAD MODEL
+# -------------------------------
+model = joblib.load("revenue_model.pkl")
+
+# -------------------------------
+# SESSION STATE
+# -------------------------------
+if "prediction" not in st.session_state:
+    st.session_state.prediction = None
+
+# -------------------------------
+# INPUTS (BUSINESS FRIENDLY)
+# -------------------------------
+st.subheader("Enter Business Inputs")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    discount = st.slider("Discount", 0.0, 1.0, 0.1)
-    quantity = st.number_input("Quantity", min_value=1, value=5)  # ✅ FIXED (no max limit)
+    discount = st.slider("Discount (%)", 0, 50, 10) / 100
+    quantity = st.number_input("Quantity Sold", min_value=1, max_value=1000, value=50)
 
 with col2:
     shipping_cost = st.number_input("Shipping Cost", min_value=0.0, value=50.0)
-    month = st.slider("Month", 1, 12, 6)
+    season = st.selectbox("Season", ["Off-Season", "Regular", "Peak"])
 
-# -------------------------
-# Season Mapping
-# -------------------------
-if month in [12, 1, 2]:
-    season = "Winter"
-elif month in [3, 4, 5]:
-    season = "Summer"
-elif month in [6, 7, 8]:
-    season = "Monsoon"
-else:
-    season = "Autumn"
+# Convert season to numeric (model compatibility)
+season_map = {"Off-Season": 1, "Regular": 2, "Peak": 3}
+season_value = season_map[season]
 
-# -------------------------
-# Prediction
-# -------------------------
-if "prediction" not in st.session_state:
-    st.session_state.prediction = None
-
-if st.button("Predict Revenue"):
-
-    input_data = np.array([[discount, quantity, shipping_cost, month, 2024]])
+# -------------------------------
+# PREDICTION
+# -------------------------------
+if st.button("🔍 Predict Revenue"):
+    input_data = np.array([[discount, quantity, shipping_cost, season_value]])
     prediction = model.predict(input_data)[0]
 
     st.session_state.prediction = prediction
 
     threshold = 1128
 
-    if prediction < threshold:
-        risk = "High Risk"
-        st.error(f"⚠️ High Risk | Predicted Revenue: {prediction:.2f}")
-    else:
-        risk = "Normal"
-        st.success(f"✅ Normal | Predicted Revenue: {prediction:.2f}")
+    st.subheader("📈 Prediction Result")
+    st.write(f"Estimated Revenue: ₹ {prediction:.2f}")
 
-    # -------------------------
-    # Graph
-    # -------------------------
-    st.subheader("📈 Revenue vs Threshold")
+    if prediction < threshold:
+        st.error("⚠️ High Risk: Revenue is below expected level")
+    else:
+        st.success("✅ Healthy Revenue Expected")
+
+# -------------------------------
+# BUSINESS GRAPH (USEFUL)
+# -------------------------------
+if st.session_state.prediction is not None:
+    st.subheader("📊 Revenue Sensitivity Analysis")
+
+    discounts = np.linspace(0, 0.5, 20)
+    revenues = []
+
+    for d in discounts:
+        temp_input = np.array([[d, quantity, shipping_cost, season_value]])
+        revenues.append(model.predict(temp_input)[0])
 
     fig, ax = plt.subplots()
-    ax.bar(["Predicted Revenue", "Threshold"], [prediction, threshold])
-    ax.set_ylabel("Revenue")
+    ax.plot(discounts * 100, revenues)
+    ax.axhline(y=1128, linestyle='--')
+
+    ax.set_xlabel("Discount (%)")
+    ax.set_ylabel("Predicted Revenue")
+    ax.set_title("Impact of Discount on Revenue")
+
     st.pyplot(fig)
 
-    # -------------------------
-    # Basic Insights
-    # -------------------------
-    st.subheader("📊 Transaction Analysis")
+    st.info("💡 Insight: Increasing discounts may reduce revenue after a certain point. Find the optimal discount level.")
 
-    if quantity > 10:
-        st.success("Bulk order — good revenue potential.")
-    elif discount > 0.5:
-        st.warning("High discount — may reduce profit margins.")
+# -------------------------------
+# TRANSACTION INSIGHT
+# -------------------------------
+if st.session_state.prediction is not None:
+    st.subheader("📌 Transaction Analysis")
+
+    if quantity > 100:
+        st.success("Bulk order detected → Strong revenue opportunity")
+    elif discount > 0.3:
+        st.warning("High discount → Profit margin risk")
+    elif shipping_cost > 100:
+        st.warning("High shipping cost → Cost optimization needed")
     else:
-        st.info("Normal transaction pattern.")
+        st.info("Balanced transaction")
 
-# -------------------------
-# AI SECTION
-# -------------------------
+# -------------------------------
+# AI BUSINESS ASSISTANT
+# -------------------------------
 st.subheader("🤖 AI Business Assistant")
 
 user_query = st.text_input("Ask business questions:")
 
-if st.button("Get AI Insight"):
+if st.button("💡 Get AI Insight"):
 
     if st.session_state.prediction is None:
         st.warning("⚠️ Please run prediction first")
 
     elif not user_query:
-        st.warning("⚠️ Please enter a business question")
+        st.warning("⚠️ Please enter a question")
 
     else:
-        prediction = st.session_state.prediction
-
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-        prompt = f"""
-        You are a business analyst AI.
-
-        Transaction Details:
-        Discount: {discount}
-        Quantity: {quantity}
-        Shipping Cost: {shipping_cost}
-        Season: {season}
-        Predicted Revenue: {prediction}
-
-        User Question: {user_query}
-
-        Provide clear, practical, and actionable business insights.
-        """
-
         try:
+            from groq import Groq
+
+            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+            prediction = st.session_state.prediction
+
+            prompt = f"""
+You are a business analyst.
+
+Transaction Details:
+- Discount: {discount}
+- Quantity: {quantity}
+- Shipping Cost: {shipping_cost}
+- Season: {season}
+- Predicted Revenue: {prediction}
+
+User Question:
+{user_query}
+
+Give clear, simple, actionable business advice.
+"""
+
             response = client.chat.completions.create(
-                model="llama3-8b-8192",
+                model="llama3-70b-8192",
                 messages=[{"role": "user", "content": prompt}]
             )
 
             st.subheader("💡 AI Insights")
             st.write(response.choices[0].message.content)
-            
-except Exception as e:
-    st.error(e)
+
+        except Exception as e:
+            st.error(e)
