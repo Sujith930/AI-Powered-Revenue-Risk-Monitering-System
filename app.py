@@ -139,8 +139,10 @@ if st.button("Get AI Insight"):
 
     else:
         prediction = st.session_state.prediction
+        
+from groq import Groq
 
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
         prompt = f"""
         You are a business analyst AI.
