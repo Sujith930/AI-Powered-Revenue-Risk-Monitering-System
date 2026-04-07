@@ -129,6 +129,6 @@ if st.button("Get AI Insight"):
 
             st.subheader("💡 AI Insights")
             st.write(response.choices[0].message.content)
-
-        except Exception as e:
+            
+except Exception as e:
     st.error(e)
