@@ -2,107 +2,86 @@ import streamlit as st
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
-from openai import OpenAI
 
-# -------------------------------
+# ------------------------------
 # PAGE CONFIG
-# -------------------------------
+# ------------------------------
 st.set_page_config(page_title="AI Revenue Risk System", layout="wide")
 
-st.title("📊 AI Revenue Risk Monitoring System")
+st.title("📊 AI-Powered Revenue Risk Monitoring System")
 
-# -------------------------------
+# ------------------------------
 # LOAD MODEL
-# -------------------------------
+# ------------------------------
 model = joblib.load("revenue_model.pkl")
 
-# -------------------------------
+# ------------------------------
 # SESSION STATE
-# -------------------------------
+# ------------------------------
 if "prediction" not in st.session_state:
     st.session_state.prediction = None
 
-# -------------------------------
+# ------------------------------
 # INPUTS
-# -------------------------------
-st.subheader("Enter Business Inputs")
+# ------------------------------
+st.subheader("🧾 Enter Transaction Details")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    discount = st.slider("Discount (%)", 0, 50, 10) / 100
-    quantity = st.number_input("Quantity Sold", min_value=1, value=50)
-
-    if quantity > 1000:
-        st.warning("⚠️ Large quantity — prediction may be less accurate")
+    discount = st.slider("Discount", 0.0, 1.0, 0.1)
+    quantity = st.number_input("Quantity", min_value=1, value=50)
 
 with col2:
     shipping_cost = st.number_input("Shipping Cost", min_value=0.0, value=50.0)
-    season = st.selectbox("Business Period", ["Off-Season", "Regular", "Peak"])
+    season = st.selectbox("Season", ["Off-Season", "Regular", "Peak"])
 
-# -------------------------------
-# MODEL COMPATIBILITY
-# -------------------------------
-season_to_month = {
-    "Off-Season": 2,
-    "Regular": 6,
-    "Peak": 11
-}
+# Convert season to numeric (model compatibility)
+season_map = {"Off-Season": 2, "Regular": 6, "Peak": 11}
+month = season_map[season]
+year = 2015
 
-month = season_to_month[season]
-year = 2015  # fixed
-
-# -------------------------------
+# ------------------------------
 # PREDICTION
-# -------------------------------
+# ------------------------------
 if st.button("🔍 Predict Revenue"):
-
     input_data = np.array([[discount, quantity, shipping_cost, month, year]])
-
     prediction = model.predict(input_data)[0]
     st.session_state.prediction = prediction
 
+# ------------------------------
+# RESULTS
+# ------------------------------
+if st.session_state.prediction is not None:
+
+    prediction = st.session_state.prediction
     threshold = 1128
 
     st.subheader("📈 Prediction Result")
-    st.write(f"Estimated Revenue: ₹ {prediction:.2f}")
+    st.write(f"Predicted Revenue: ₹ {prediction:.2f}")
 
-    if prediction < threshold:
-        st.error("⚠️ High Risk: Revenue is below expected level")
-    else:
-        st.success("✅ Healthy Revenue Expected")
+    # ------------------------------
+    # RISK SCORE
+    # ------------------------------
+    risk_score = max(0, min(100, int((threshold - prediction) / threshold * 100)))
+    st.metric("⚠️ Revenue Risk Score", f"{risk_score}%")
 
-# -------------------------------
-# BUSINESS GRAPH
-# -------------------------------
-if st.session_state.prediction is not None:
+    # ------------------------------
+    # GRAPH
+    # ------------------------------
+    st.subheader("📊 Revenue vs Target")
 
-    st.subheader("📊 Pricing Strategy Insight")
-
-    discounts = np.linspace(0, 0.5, 20)
-    revenues = []
-
-    for d in discounts:
-        temp_input = np.array([[d, quantity, shipping_cost, month, year]])
-        revenues.append(model.predict(temp_input)[0])
+    values = [prediction, threshold]
+    labels = ["Predicted Revenue", "Target"]
 
     fig, ax = plt.subplots()
-    ax.plot(discounts * 100, revenues)
-    ax.axhline(y=1128, linestyle='--')
-
-    ax.set_xlabel("Discount (%)")
-    ax.set_ylabel("Predicted Revenue")
-    ax.set_title("Impact of Discount on Revenue")
-
+    ax.bar(labels, values)
+    ax.set_ylabel("Revenue")
     st.pyplot(fig)
 
-    st.info("💡 Insight: Increasing discounts beyond a point reduces revenue. Identify optimal pricing.")
-
-# -------------------------------
-# TRANSACTION ANALYSIS
-# -------------------------------
-if st.session_state.prediction is not None:
-
+    # ------------------------------
+    # TRANSACTION INSIGHTS
+    # ------------------------------
     st.subheader("📌 Transaction Insights")
 
     if quantity > 100:
@@ -114,14 +93,27 @@ if st.session_state.prediction is not None:
     else:
         st.info("Balanced transaction")
 
-# -------------------------------
-# AI BUSINESS ASSISTANT
-# -------------------------------
-st.subheader("🤖 AI Business Assistant")
+    # ------------------------------
+    # STRATEGIC RECOMMENDATION
+    # ------------------------------
+    st.subheader("📊 Strategic Recommendation")
 
-user_query = st.text_input("Ask business questions:")
+    if prediction < threshold:
+        st.error("Focus on improving pricing, reducing discounts, or increasing volume.")
+    else:
+        st.success("Current strategy is effective. Consider scaling this approach.")
 
-if st.button("💡 Get AI Insight"):
+# ------------------------------
+# HYBRID AI SECTION
+# ------------------------------
+st.subheader("🤖 Business Insights Engine")
+
+user_query = st.text_input("Ask a business question:")
+
+# Toggle for LLM
+use_llm = st.checkbox("Enable Advanced AI Insights (LLM)")
+
+if st.button("💡 Generate Insights"):
 
     if st.session_state.prediction is None:
         st.warning("⚠️ Please run prediction first")
@@ -130,34 +122,75 @@ if st.button("💡 Get AI Insight"):
         st.warning("⚠️ Please enter a question")
 
     else:
-        try:
-            client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        prediction = st.session_state.prediction
+        threshold = 1128
 
-            prediction = st.session_state.prediction
+        # ------------------------------
+        # RULE-BASED INSIGHTS (ALWAYS RUN)
+        # ------------------------------
+        st.subheader("📌 Rule-Based Insights")
 
-            prompt = f"""
-You are a business analyst AI.
+        insights = []
+
+        if discount > 0.3:
+            insights.append("Reduce discount levels to protect profit margins.")
+
+        if quantity > 100:
+            insights.append("Focus on bulk buyers and B2B opportunities.")
+
+        if shipping_cost > 100:
+            insights.append("Optimize logistics to reduce shipping costs.")
+
+        if prediction < threshold:
+            insights.append("Revenue is below target. Improve pricing or increase sales volume.")
+        else:
+            insights.append("Revenue is healthy. Consider scaling this strategy.")
+
+        query = user_query.lower()
+
+        if "increase revenue" in query:
+            insights.append("Optimize discounts, target high-volume customers, and improve pricing.")
+
+        if "profit" in query:
+            insights.append("Reduce discounts and control operational costs to improve margins.")
+
+        if "cost" in query:
+            insights.append("Focus on reducing shipping and operational expenses.")
+
+        for insight in insights:
+            st.write("•", insight)
+
+        # ------------------------------
+        # OPTIONAL LLM INSIGHTS
+        # ------------------------------
+        if use_llm:
+            try:
+                from openai import OpenAI
+
+                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+                prompt = f"""
+You are a business analyst.
 
 Transaction Details:
 - Discount: {discount}
 - Quantity: {quantity}
 - Shipping Cost: {shipping_cost}
-- Season: {season}
 - Predicted Revenue: {prediction}
 
 User Question:
 {user_query}
 
-Give clear, simple, and actionable business insights.
+Provide advanced business insights.
 """
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}]
-            )
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}]
+                )
 
-            st.subheader("💡 AI Insights")
-            st.write(response.choices[0].message.content)
+                st.subheader("🤖 Advanced AI Insights")
+                st.write(response.choices[0].message.content)
 
-        except Exception as e:
-            st.error(f"AI Error: {e}")
+            except Exception:
+                st.warning("⚠️ LLM not available. Showing rule-based insights only.")
